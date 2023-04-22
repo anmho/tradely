@@ -15,30 +15,68 @@ async function getHistoricalData(fromTicker, toTicker) {
 // limit order only -- assume orders are always filled
 // lets assume everyone is purchasing in USD
 async function sendSellOrder(amount_usd, asset_price, ticker) {
-  const amount = amount_usd / asset_price;
+  const asset_amount = amount_usd / asset_price;
+  console.log(asset_amount);
 
   const order = {
     type: 'sell',
     ticker: ticker,
-    amount: amount,
+    amount: asset_amount,
   };
 
   // now can essentially increment or decrement the amount in the 'database'
 
-  const portfolio = JSON.parse(AsyncStorage.getItem('portfolio'));
+  const portfolio = JSON.parse(await AsyncStorage.getItem('portfolio'));
 
-  if (portfolio[ticker] >= amount) return false;
+  console.log(portfolio);
 
-  portfolio[ticker] -= amount;
+  if (!portfolio[ticker] || portfolio[ticker] < asset_amount) return false;
+
+  portfolio['USD'] += amount_usd;
+  portfolio[ticker] = portfolio[ticker]
+    ? portfolio[ticker] - asset_amount
+    : asset_amount;
 
   AsyncStorage.setItem('portfolio', JSON.stringify(portfolio));
   // use local storage to store transaction and update the currency quantities
+
+  console.log(portfolio);
 
   // return success or failure
   return true;
 }
 
-async function sendBuyOrder() {}
+async function sendBuyOrder(amount_usd, asset_price, ticker) {
+  const asset_amount = amount_usd / asset_price;
+
+  const order = {
+    type: 'sell',
+    ticker: ticker,
+    amount: asset_amount,
+  };
+
+  console.log(asset_amount);
+
+  // now can essentially increment or decrement the amount in the 'database'
+
+  const portfolio = JSON.parse(await AsyncStorage.getItem('portfolio'));
+
+  console.log(portfolio);
+
+  if (portfolio['USD'] < amount_usd) return false;
+
+  portfolio['USD'] -= amount_usd;
+  portfolio[ticker] = portfolio[ticker]
+    ? portfolio[ticker] + asset_amount
+    : asset_amount;
+
+  AsyncStorage.setItem('portfolio', JSON.stringify(portfolio));
+  // use local storage to store transaction and update the currency quantities
+
+  // return success or failure
+
+  return true;
+}
 
 export default function App() {
   const [webSocket, setWebSocket] = useState();
@@ -85,9 +123,9 @@ export default function App() {
       // initialize key - value storage
       //
 
-      if (!AsyncStorage.getItem('portfolio')) {
-        AsyncStorage.setItem('portfolio', JSON.stringify({}));
-      }
+      // if (!AsyncStorage.getItem('portfolio')) {
+      AsyncStorage.setItem('portfolio', JSON.stringify({ USD: 10_000 }));
+      // }
 
       return ws;
     };
@@ -102,8 +140,11 @@ export default function App() {
     <View style={styles.container}>
       <Text style={{ color: 'black' }}>{curPrice}</Text>
       <StatusBar style="auto" />
-      <Button title="buy" />
-      <Button title="sell" />
+      <Button title="buy" onPress={() => sendBuyOrder(500, curPrice, 'ETH')} />
+      <Button
+        title="sell"
+        onPress={() => sendSellOrder(500, curPrice, 'ETH')}
+      />
       {/* <Text>{AsyncStorage.getItem('portfolio')}</Text> */}
     </View>
   );
