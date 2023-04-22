@@ -1,6 +1,7 @@
 import { StatusBar, setStatusBarBackgroundColor } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 async function getHistoricalData(fromTicker, toTicker) {
   const product_id = `${fromTicker}-${toTicker}`;
@@ -10,6 +11,34 @@ async function getHistoricalData(fromTicker, toTicker) {
   const data = await response.json();
   return await data;
 }
+
+// limit order only -- assume orders are always filled
+// lets assume everyone is purchasing in USD
+async function sendSellOrder(amount_usd, asset_price, ticker) {
+  const amount = amount_usd / asset_price;
+
+  const order = {
+    type: 'sell',
+    ticker: ticker,
+    amount: amount,
+  };
+
+  // now can essentially increment or decrement the amount in the 'database'
+
+  const portfolio = JSON.parse(AsyncStorage.getItem('portfolio'));
+
+  if (portfolio[ticker] >= amount) return false;
+
+  portfolio[ticker] -= amount;
+
+  AsyncStorage.setItem('portfolio', JSON.stringify(portfolio));
+  // use local storage to store transaction and update the currency quantities
+
+  // return success or failure
+  return true;
+}
+
+async function sendBuyOrder() {}
 
 export default function App() {
   const [webSocket, setWebSocket] = useState();
@@ -32,6 +61,7 @@ export default function App() {
           })
         );
       };
+
       ws.onmessage = (e) => {
         const data = JSON.parse(e.data);
         // console.log(data);
@@ -52,6 +82,13 @@ export default function App() {
           .then((res) => res.json())
           .then((data) => setHistPrices(data));
 
+      // initialize key - value storage
+      //
+
+      if (!AsyncStorage.getItem('portfolio')) {
+        AsyncStorage.setItem('portfolio', JSON.stringify({}));
+      }
+
       return ws;
     };
 
@@ -65,6 +102,9 @@ export default function App() {
     <View style={styles.container}>
       <Text style={{ color: 'black' }}>{curPrice}</Text>
       <StatusBar style="auto" />
+      <Button title="buy" />
+      <Button title="sell" />
+      {/* <Text>{AsyncStorage.getItem('portfolio')}</Text> */}
     </View>
   );
 }
