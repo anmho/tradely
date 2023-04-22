@@ -1,7 +1,8 @@
 import { StatusBar, setStatusBarBackgroundColor } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CurrencyDetail from './screens/CurrencyDetail';
 
 async function getHistoricalData(fromTicker, toTicker) {
   const product_id = `${fromTicker}-${toTicker}`;
@@ -85,68 +86,63 @@ export default function App() {
   const [fromTicker, setFromTicker] = useState('ETH');
   const [toTicker, setToTicker] = useState('USD');
 
-  useEffect(() => {
-    const connectCoinbaseStreaming = (fromTicker, toTicker) => {
-      const ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
-      const conversion_string = `${fromTicker}-${toTicker}`;
+  // useEffect(() => {
+  //   const connectCoinbaseStreaming = (fromTicker, toTicker) => {
+  //     const ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+  //     const conversion_string = `${fromTicker}-${toTicker}`;
 
-      ws.onopen = () => {
-        ws.send(
-          JSON.stringify({
-            type: 'subscribe',
-            product_ids: [conversion_string],
-            channels: ['ticker'],
-          })
-        );
-      };
+  //     ws.onopen = () => {
+  //       ws.send(
+  //         JSON.stringify({
+  //           type: 'subscribe',
+  //           product_ids: [conversion_string],
+  //           channels: ['ticker'],
+  //         })
+  //       );
+  //     };
 
-      ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        // console.log(data);
-        if (data && data.price) {
-          const price = data.price;
-          setCurPrice(price);
-        }
-      };
+  //     ws.onmessage = (e) => {
+  //       const data = JSON.parse(e.data);
+  //       // console.log(data);
+  //       if (data && data.price) {
+  //         const price = data.price;
+  //         setCurPrice(price);
+  //       }
+  //     };
 
-      ws.onerror = (error) => {
-        console.log(`WebSocket Error: ${error}`);
-      };
+  //     ws.onerror = (error) => {
+  //       console.log(`WebSocket Error: ${error}`);
+  //     };
 
-      const product_id = `${fromTicker}-${toTicker}`;
-      const response =
-        fetch(`https://api.pro.coinbase.com/products/${product_id}/candles
-    `)
-          .then((res) => res.json())
-          .then((data) => setHistPrices(data));
+  //     const product_id = `${fromTicker}-${toTicker}`;
+  //     const response =
+  //       fetch(`https://api.pro.coinbase.com/products/${product_id}/candles
+  //   `)
+  //         .then((res) => res.json())
+  //         .then((data) => setHistPrices(data));
 
-      // initialize key - value storage
-      //
+  //     // initialize key - value storage
+  //     //
 
-      // if (!AsyncStorage.getItem('portfolio')) {
-      AsyncStorage.setItem('portfolio', JSON.stringify({ USD: 10_000 }));
-      // }
+  //     // if (!AsyncStorage.getItem('portfolio')) {
 
-      return ws;
-    };
+  //     const portfolio = { USD: 10_000 };
+  //     AsyncStorage.setItem('portfolio', JSON.stringify(portfolio));
+  //     // }
 
-    const ws = connectCoinbaseStreaming(fromTicker, toTicker);
-    setWebSocket(ws);
+  //     return ws;
+  //   };
 
-    return () => ws.close();
-  }, []);
+  //   const ws = connectCoinbaseStreaming(fromTicker, toTicker);
+  //   setWebSocket(ws);
+
+  //   return () => ws.close();
+  // }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={{ color: 'black' }}>{curPrice}</Text>
-      <StatusBar style="auto" />
-      <Button title="buy" onPress={() => sendBuyOrder(500, curPrice, 'ETH')} />
-      <Button
-        title="sell"
-        onPress={() => sendSellOrder(500, curPrice, 'ETH')}
-      />
-      {/* <Text>{AsyncStorage.getItem('portfolio')}</Text> */}
-    </View>
+    <>
+      <CurrencyDetail />
+    </>
   );
 }
 
@@ -156,5 +152,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  buyButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    width: '80%',
+    borderRadius: 4,
+    color: 'white',
+    elevation: 3,
+    color: '#fff',
+    backgroundColor: 'blue',
+    marginBottom: 10,
+  },
+
+  sellButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    width: '80%',
+    borderRadius: 4,
+    elevation: 3,
+    color: '#fff',
+    backgroundColor: 'blue',
+  },
+  buttonContainer: {
+    text: {
+      color: '#fff',
+    },
+    width: '100%',
+    position: 'absolute',
+    bottom: 30,
+    flex: 0,
+    marginLeft: 20,
+    marginRight: 20,
+    alignItems: 'center',
+    // flexDirection: 'row',
   },
 });
